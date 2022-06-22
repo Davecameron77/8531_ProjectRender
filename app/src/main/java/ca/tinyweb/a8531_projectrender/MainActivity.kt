@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.renderscript.Toolkit
 import java.lang.System.currentTimeMillis
 import java.util.*
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,18 +23,30 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val executor = Executors.newFixedThreadPool(NUM_THREADS)
+
         val startTimeInMills = currentTimeMillis()
         for (i in 1..ITERATIONS) {
-            val resId = getResId()
-            mBitmapIn = loadBitmap(resId)!!
-            mBitmapOut = Bitmap.createBitmap(mBitmapIn.width, mBitmapIn.height, mBitmapIn.config)
+            val worker = Runnable {
+                val resId = getResId()
+                mBitmapIn = loadBitmap(resId)!!
+                mBitmapOut = Bitmap.createBitmap(mBitmapIn.width, mBitmapIn.height, mBitmapIn.config)
 
-            findViewById<ImageView>(R.id.displayin).setImageBitmap(mBitmapIn)
-            mBitmapOut = Toolkit.colorMatrix(mBitmapIn, Toolkit.greyScaleColorMatrix)
-            findViewById<ImageView>(R.id.displayout).setImageBitmap(mBitmapOut)
+                findViewById<ImageView>(R.id.displayin).setImageBitmap(mBitmapIn)
+                mBitmapOut = Toolkit.colorMatrix(mBitmapIn, Toolkit.greyScaleColorMatrix)
+                findViewById<ImageView>(R.id.displayout).setImageBitmap(mBitmapOut)
+            }
+            executor.execute(worker)
         }
+
+        executor.shutdown()
+        while (!executor.isTerminated) {
+
+        }
+
         val endTimeInMills = currentTimeMillis()
         val executionTime = endTimeInMills - startTimeInMills
+
 
         Toast.makeText(
             this,
